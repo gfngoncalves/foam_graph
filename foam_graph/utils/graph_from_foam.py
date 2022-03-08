@@ -56,7 +56,7 @@ def boundary_positions(mesh):
     return np.vstack(pos_f)
 
 
-def mesh_to_graph(mesh, read_boundaries=True):
+def mesh_to_edges_and_nodes(mesh, read_boundaries=True):
     edge_index = internal_connectivity(mesh)
     pos = mesh.cell_centres
 
@@ -72,7 +72,7 @@ def mesh_to_graph(mesh, read_boundaries=True):
 
     pos = torch.as_tensor(pos, dtype=torch.float32)
 
-    return Data(edge_index=edge_index, pos=pos)
+    return (edge_index, pos)
 
 
 def expand_field_shape(field, n_vals, n_comps):
@@ -110,42 +110,43 @@ def get_value_from_field_name(field_boundary, bd):
     return None
 
 
-def read_fields(case_name, mesh, field_names, read_boundaries=True, time=0):
-    fields = {}
-    for field_name in field_names:
-        field, field_boundary = op.parse_field_all(f"{case_name}/{time}/{field_name}")
-        n_comps = number_of_components(field, mesh)
-        field = expand_field_shape(field, len(mesh.cell_centres), n_comps)
-        if read_boundaries:
-            for bd in mesh.boundary.keys():
-                if mesh.boundary[bd].type != b"empty":
-                    field_value = get_value_from_field_name(field_boundary, bd).get(
-                        b"value"
-                    )
-                    field_bd = expand_field_shape(
-                        field_value,
-                        mesh.boundary[bd].num,
-                        n_comps,
-                    )
-                    field = np.vstack([field, field_bd])
-        fields[field_name] = field
-    return fields
+def read_field(case_name, mesh, field_name, read_boundaries=True, time=0):
+    field, field_boundary = op.parse_field_all(f"{case_name}/{time}/{field_name}")
+    n_comps = number_of_components(field, mesh)
+    field = expand_field_shape(field, len(mesh.cell_centres), n_comps)
+    if read_boundaries:
+        for bd in mesh.boundary.keys():
+            if mesh.boundary[bd].type == b"empty":
+                continue
 
-
-def add_fields_to_graph(graph, fields, time):
-    for (field_name, field) in fields.items():
-        graph[f"{field_name}_time{time}"] = torch.as_tensor(field, dtype=torch.float32)
-
-    return graph
+            field_value = get_value_from_field_name(field_boundary, bd).get(
+                b"value"
+            )
+            field_bd = expand_field_shape(
+                field_value,
+                mesh.boundary[bd].num,
+                n_comps,
+            )
+            field = np.vstack([field, field_bd])
+    return torch.as_tensor(field, dtype=torch.float32)
 
 
 def read_case(case_path, field_names, read_boundaries=True, times="all"):
+    """Reads an OpenFOAM case as a PyTorch Geometric graph.
+
+    Args:
+        case_path (str): Path to the folder containg an OpenFOAM case
+        field_names (_type_): List of field names extracted from the case
+        read_boundaries (bool, optional): Flag for reading boundary patch faces as graph nodes. Also adds a binary mask to the graph for those faces. Defaults to True.
+        times (str/List, optional): List of times to be read, or strings "first_and_last" or "all" . Defaults to "all".
+
+    Returns:
+        Data: PyTorch Geometric graph. Fields are stored as attributes with shape [timesteps, cells, components]
+    """
     case = SolutionDirectory(case_path)
 
     mesh = read_mesh(case.name, read_boundaries, case.getFirst())
-    graph = mesh_to_graph(mesh, read_boundaries)
-
-    graph.name = os.path.basename(case.name)
+    edge_index, pos = mesh_to_edges_and_nodes(mesh, read_boundaries)
 
     if isinstance(times, (list, np.ndarray)):
         selected_times = [str(t) for t in times]
@@ -156,12 +157,19 @@ def read_case(case_path, field_names, read_boundaries=True, times="all"):
     else:
         raise ValueError("times must be an array, 'all' or 'first_and_last'")
 
+    fields = {f: [] for f in field_names}
+    fields["time"] = []
     for time in selected_times:
-        fields = read_fields(case.name, mesh, field_names, read_boundaries, time)
-        graph = add_fields_to_graph(graph, fields, time)
-        if read_boundaries:
-            graph.boundary = torch.as_tensor(
-                np.zeros((len(graph.pos), 1)), dtype=torch.float32
-            )
-            graph.boundary[mesh.num_cell + 1 :, :] = 1
+        fields["time"].append(float(time))
+        for f in field_names:
+            field = read_field(case.name, mesh, f, read_boundaries, time)
+            fields[f].append(field)
+    
+    if read_boundaries:
+        fields["boundary"] = torch.as_tensor(
+            np.zeros((len(pos), 1)), dtype=torch.float32
+        )
+        fields["boundary"][mesh.num_cell + 1 :, :] = 1
+    
+    graph = Data(edge_index=edge_index, pos=pos, name=os.path.basename(case.name), **fields)
     return graph

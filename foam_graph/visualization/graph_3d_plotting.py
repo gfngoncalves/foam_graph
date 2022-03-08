@@ -2,11 +2,12 @@ import plotly.graph_objects as go
 
 
 def plot_3d_graph(graph, field_name=None, field_component=0, time=None):
-    field_name_with_time = field_name
-    if time is not None:
-        field_name_with_time = f"{field_name_with_time}_time{time}"
+    field_plot_name = "field_plot"
+    graph[field_plot_name] = None
+    if time is not None and field_name is not None:
+        graph[field_plot_name] = graph[field_name][time]
 
-    node_color = graph[field_name_with_time][:, field_component]
+    node_color = graph[field_plot_name][:, field_component]
 
     x_nodes = [graph.pos[i][0] for i in range(graph.num_nodes)]
     y_nodes = [graph.pos[i][1] for i in range(graph.num_nodes)]

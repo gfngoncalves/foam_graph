@@ -12,14 +12,14 @@ graph = read_case(
     "damBreak",
     ("alpha.water",),
     read_boundaries=True,
-    times="first_and_last",
+    times="all",
 )
 
 #%% Plot alpha field for 2D case
 
 field_name_plot = "alpha.water"
 field_component_plot = 0
-time = 1
+time = -1
 
 fig, ax = plt.subplots(figsize=(10, 10))
 plot_graph(graph, field_name_plot, field_component_plot, time=time, ax=ax)

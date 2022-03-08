@@ -18,7 +18,7 @@ graph = read_case(
 
 field_name = "alpha.water"
 field_component = 0
-time = 10
+time = -1
 
 fig = plot_3d_graph(
     graph, field_name=field_name, field_component=field_component, time=time
