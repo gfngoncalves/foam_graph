@@ -10,6 +10,7 @@ install_requires = [
     "torch",
     "torchvision",
     "torch_geometric",
+    "torch-geometric-temporal",
     "torch_sparse",
     "torch_scatter",
 ]
