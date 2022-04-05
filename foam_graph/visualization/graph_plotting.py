@@ -4,7 +4,9 @@ from torch_geometric.utils.convert import to_networkx
 import matplotlib.pyplot as plt
 
 
-def plot_graph(graph, field_name=None, field_component=0, time=None, ax=None):
+def plot_graph(
+    graph, field_name=None, field_component=0, time=None, ax=None, plot_colorbar=False
+):
     if ax is None:
         ax = plt.gca()
 
@@ -14,7 +16,9 @@ def plot_graph(graph, field_name=None, field_component=0, time=None, ax=None):
             value_plotted = graph[field_name][time]
         else:
             value_plotted = graph[field_name]
-    node_attrs = ["pos", "y"] if value_plotted is not None else ["pos",]
+    node_attrs = (
+        ["pos", "y"] if value_plotted is not None else ["pos",]
+    )
     graph = Data(edge_index=graph.edge_index, pos=graph.pos, y=value_plotted)
 
     graphnx = to_networkx(graph, node_attrs=node_attrs, to_undirected=True)
@@ -33,7 +37,7 @@ def plot_graph(graph, field_name=None, field_component=0, time=None, ax=None):
         if value_plotted is not None
         else "k"
     )
-    nx.draw(
+    nodes = nx.draw_networkx_nodes(
         subgraphnx,
         pos=pos,
         node_color=node_color,
@@ -41,4 +45,10 @@ def plot_graph(graph, field_name=None, field_component=0, time=None, ax=None):
         cmap=plt.cm.viridis,
         ax=ax,
     )
+    nx.draw_networkx_edges(
+        subgraphnx, pos=pos, ax=ax,
+    )
+    if plot_colorbar:
+        plt.colorbar(nodes, ax=ax)
+    ax.axis("off")
     ax.axis("scaled")
