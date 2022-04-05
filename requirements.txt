@@ -2,7 +2,7 @@ decorator==4.4.2
 openfoamparser==0.13
 plotly==4.9.0
 pyfoam==2020.5
-pytorch_lightning==1.2.10
+pytorch_lightning==1.6.0
 torch==1.8.1
 torchvision==0.9.1
 torch_geometric==1.7.0
