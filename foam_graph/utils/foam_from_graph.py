@@ -1,9 +1,10 @@
 import io
 import numpy as np
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
+import torch
 
 
-def write_to_internal_field(file_out, data_out):
+def write_to_internal_field(file_out: str, data_out: torch.tensor) -> None:
     n_comps = data_out.size(-1)
     val_type = "vector" if n_comps == 3 else "scalar"
     newline = ")\n(" if n_comps == 3 else "\n"
