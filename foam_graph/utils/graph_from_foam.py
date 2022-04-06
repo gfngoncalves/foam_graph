@@ -12,7 +12,7 @@ from typing import Iterable, Optional, Union
 from collections.abc import Mapping
 
 
-def read_mesh(
+def _read_mesh(
     case_name: str, read_boundaries: bool = True, time: float = 0
 ) -> op.FoamMesh:
     mesh = op.FoamMesh(case_name)
@@ -22,13 +22,13 @@ def read_mesh(
     return mesh
 
 
-def internal_connectivity(mesh: op.FoamMesh) -> np.array:
+def _internal_connectivity(mesh: op.FoamMesh) -> np.array:
     return np.array(
         [mesh.owner[0 : mesh.num_inner_face], mesh.neighbour[0 : mesh.num_inner_face]]
     )
 
 
-def boundary_connectivity(mesh: op.FoamMesh) -> np.array:
+def _boundary_connectivity(mesh: op.FoamMesh) -> np.array:
     bd_orig = []
     bd_dest = []
     n_empty = 0
@@ -50,7 +50,7 @@ def boundary_connectivity(mesh: op.FoamMesh) -> np.array:
     return np.array([bd_orig, bd_dest])
 
 
-def boundary_positions(mesh: op.FoamMesh) -> np.array:
+def _boundary_positions(mesh: op.FoamMesh) -> np.array:
     pos_f = []
     for bd in mesh.boundary.keys():
         face_centres = mesh.boundary_face_centres[bd]
@@ -61,17 +61,17 @@ def boundary_positions(mesh: op.FoamMesh) -> np.array:
     return np.vstack(pos_f)
 
 
-def mesh_to_edges_and_nodes(
+def _mesh_to_edges_and_nodes(
     mesh: op.FoamMesh, read_boundaries: bool = True
 ) -> tuple[torch.tensor, torch.tensor]:
-    edge_index = internal_connectivity(mesh)
+    edge_index = _internal_connectivity(mesh)
     pos = mesh.cell_centres
 
     if read_boundaries:
-        edge_index_bd = boundary_connectivity(mesh)
+        edge_index_bd = _boundary_connectivity(mesh)
         edge_index = np.hstack([edge_index, edge_index_bd])
 
-        pos_bd = boundary_positions(mesh)
+        pos_bd = _boundary_positions(mesh)
         pos = np.vstack([pos, pos_bd])
 
     edge_index = torch.as_tensor(edge_index)
@@ -82,7 +82,7 @@ def mesh_to_edges_and_nodes(
     return (edge_index, pos)
 
 
-def expand_field_shape(
+def _expand_field_shape(
     field: Optional[Union[float, np.ndarray]], n_vals: int, n_comps: int
 ) -> np.array:
     if field is None:
@@ -96,7 +96,7 @@ def expand_field_shape(
     return field
 
 
-def number_of_components(field: Union[float, np.ndarray], mesh: op.FoamMesh) -> int:
+def _number_of_components(field: Union[float, np.ndarray], mesh: op.FoamMesh) -> int:
     if not isinstance(field, np.ndarray):
         return 1
     elif len(field) != len(mesh.cell_centres):
@@ -107,7 +107,7 @@ def number_of_components(field: Union[float, np.ndarray], mesh: op.FoamMesh) -> 
         return field.shape[1]
 
 
-def get_value_from_field_name(field_boundary: Mapping, bd: str):
+def _get_value_from_field_name(field_boundary: Mapping, bd: str):
     if bd in field_boundary:
         return field_boundary[bd]
     for b in field_boundary.keys():
@@ -119,7 +119,7 @@ def get_value_from_field_name(field_boundary: Mapping, bd: str):
     return None
 
 
-def read_field(
+def _read_field(
     case_name: str,
     mesh: op.FoamMesh,
     field_name: str,
@@ -127,15 +127,15 @@ def read_field(
     time: float = 0,
 ) -> torch.tensor:
     field, field_boundary = op.parse_field_all(f"{case_name}/{time}/{field_name}")
-    n_comps = number_of_components(field, mesh)
-    field = expand_field_shape(field, len(mesh.cell_centres), n_comps)
+    n_comps = _number_of_components(field, mesh)
+    field = _expand_field_shape(field, len(mesh.cell_centres), n_comps)
     if read_boundaries:
         for bd in mesh.boundary.keys():
             if mesh.boundary[bd].type == b"empty":
                 continue
 
-            field_value = get_value_from_field_name(field_boundary, bd).get(b"value")
-            field_bd = expand_field_shape(field_value, mesh.boundary[bd].num, n_comps,)
+            field_value = _get_value_from_field_name(field_boundary, bd).get(b"value")
+            field_bd = _expand_field_shape(field_value, mesh.boundary[bd].num, n_comps,)
             field = np.vstack([field, field_bd])
     return torch.as_tensor(field, dtype=torch.float32)
 
@@ -162,8 +162,8 @@ def read_case(
     """
     case = SolutionDirectory(case_path)
 
-    mesh = read_mesh(case.name, read_boundaries, case.getFirst())
-    edge_index, pos = mesh_to_edges_and_nodes(mesh, read_boundaries)
+    mesh = _read_mesh(case.name, read_boundaries, case.getFirst())
+    edge_index, pos = _mesh_to_edges_and_nodes(mesh, read_boundaries)
 
     if isinstance(times, (list, np.ndarray)):
         selected_times = [str(t) for t in times]
@@ -179,7 +179,7 @@ def read_case(
     for time in selected_times:
         fields["time"].append(float(time))
         for f in field_names:
-            field = read_field(case.name, mesh, f, read_boundaries, time)
+            field = _read_field(case.name, mesh, f, read_boundaries, time)
             fields[f].append(field)
 
     if read_boundaries:
