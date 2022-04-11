@@ -23,7 +23,7 @@ field_component_plot = 0
 time = -1
 
 fig, ax = plt.subplots(figsize=(10, 10))
-plot_graph(graph, field_name_plot, field_component_plot, time=time, ax=ax)
+plot_graph(graph[time], field_name_plot, field_component_plot, ax=ax)
 
 plt.tight_layout()
 plt.show()

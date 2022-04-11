@@ -1,7 +1,9 @@
 import openfoamparser as op
 import numpy as np
 import torch
-from torch_geometric.data import Data
+from torch_geometric_temporal.signal.static_graph_temporal_signal import (
+    StaticGraphTemporalSignal,
+)
 from torch_geometric.utils import to_undirected
 
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
@@ -75,9 +77,7 @@ def _mesh_to_edges_and_nodes(
         pos = np.vstack([pos, pos_bd])
 
     edge_index = torch.as_tensor(edge_index)
-    edge_index = to_undirected(edge_index)
-
-    pos = torch.as_tensor(pos, dtype=torch.float32)
+    edge_index = to_undirected(edge_index).detach().numpy()
 
     return (edge_index, pos)
 
@@ -137,7 +137,7 @@ def _read_field(
             field_value = _get_value_from_field_name(field_boundary, bd).get(b"value")
             field_bd = _expand_field_shape(field_value, mesh.boundary[bd].num, n_comps,)
             field = np.vstack([field, field_bd])
-    return torch.as_tensor(field, dtype=torch.float32)
+    return field
 
 
 def read_case(
@@ -145,7 +145,7 @@ def read_case(
     field_names: Iterable[str],
     read_boundaries: bool = True,
     times: Union[str, Iterable[float]] = "all",
-) -> Data:
+) -> StaticGraphTemporalSignal:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
     Args:
@@ -177,18 +177,23 @@ def read_case(
     fields = {f: [] for f in field_names}
     fields["time"] = []
     for time in selected_times:
-        fields["time"].append(float(time))
+        fields["time"].append(np.full(1, np.float(time)))
         for f in field_names:
             field = _read_field(case.name, mesh, f, read_boundaries, time)
             fields[f].append(field)
 
     if read_boundaries:
-        fields["boundary"] = torch.as_tensor(
-            np.zeros((len(pos), 1)), dtype=torch.float32
-        )
-        fields["boundary"][mesh.num_cell + 1 :, :] = 1
+        boundary_flags = np.zeros((len(pos), 1))
+        boundary_flags[mesh.num_cell + 1 :, :] = 1
+        fields["boundary"] = [boundary_flags for _ in selected_times]
 
-    graph = Data(
-        edge_index=edge_index, pos=pos, name=os.path.basename(case.name), **fields
+    empty_array = np.empty(0)
+    graph = StaticGraphTemporalSignal(
+        edge_index=edge_index,
+        edge_weight=None,
+        features=[empty_array for _ in selected_times],
+        targets=[empty_array for _ in selected_times],
+        pos=[pos for _ in selected_times],
+        **fields,
     )
     return graph

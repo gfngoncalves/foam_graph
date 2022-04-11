@@ -21,7 +21,5 @@ field_name = "alpha.water"
 field_component = 0
 time = -1
 
-fig = plot_3d_graph(
-    graph, field_name=field_name, field_component=field_component, time=time
-)
+fig = plot_3d_graph(graph[time], field_name=field_name, field_component=field_component)
 fig.show()

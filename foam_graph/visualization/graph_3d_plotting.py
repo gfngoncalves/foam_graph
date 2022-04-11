@@ -1,17 +1,17 @@
 import plotly.graph_objects as go
 
 
-def plot_3d_graph(graph, field_name=None, field_component=0, time=None):
+def plot_3d_graph(graph, field_name=None, field_component=0):
     field_plot_name = "field_plot"
     graph[field_plot_name] = None
-    if time is not None and field_name is not None:
-        graph[field_plot_name] = graph[field_name][time]
+    if field_name is not None:
+        graph[field_plot_name] = graph[field_name]
 
     node_color = graph[field_plot_name][:, field_component]
 
-    x_nodes = [graph.pos[i][0] for i in range(graph.num_nodes)]
-    y_nodes = [graph.pos[i][1] for i in range(graph.num_nodes)]
-    z_nodes = [graph.pos[i][2] for i in range(graph.num_nodes)]
+    x_nodes = graph.pos[:, 0]
+    y_nodes = graph.pos[:, 1]
+    z_nodes = graph.pos[:, 2]
 
     x_edges = []
     y_edges = []
