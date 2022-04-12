@@ -182,7 +182,7 @@ def read_case(
     fields = {f: [] for f in field_names}
     fields["time"] = []
     for time in selected_times:
-        fields["time"].append(np.full(1, np.float(time)))
+        fields["time"].append(np.full(1, float(time)))
         for f in field_names:
             field = _read_field(case.name, mesh, f, read_boundaries, time)
             fields[f].append(field)
