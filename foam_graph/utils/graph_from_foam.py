@@ -158,7 +158,7 @@ def read_case(
         ValueError: unsupported input type for times parameter.
 
     Returns:
-        Data: PyTorch Geometric graph. Fields are stored as attributes with shape [timesteps, cells, components]
+        StaticGraphTemporalSignal: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
     """
     case = SolutionDirectory(case_path)
 
