@@ -10,7 +10,7 @@ from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 
 import os.path
 
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Callable
 from collections.abc import Mapping
 
 
@@ -140,11 +140,16 @@ def _read_field(
     return field
 
 
+def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.array:
+    return np.array([1]) if bd is not None else np.array([0])
+
+
 def read_case(
     case_path: str,
     field_names: Iterable[str],
     read_boundaries: bool = True,
     times: Union[str, Iterable[float]] = "all",
+    boundary_encoding: Callable[[Optional[str], Mapping], np.array] = _boundary_encoding,
 ) -> StaticGraphTemporalSignal:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
@@ -183,8 +188,14 @@ def read_case(
             fields[f].append(field)
 
     if read_boundaries:
-        boundary_flags = np.zeros((len(pos), 1))
-        boundary_flags[mesh.num_cell + 1 :, :] = 1
+        flag_internal = _boundary_encoding(None, mesh.boundary)
+        boundary_flags = np.tile(flag_internal, (len(mesh.cell_centres), 1))
+        for bd in mesh.boundary.keys():
+            b = mesh.boundary[bd]
+            if b.type != b"empty":
+                flag_bd = _boundary_encoding(bd, mesh.boundary)
+                flag_bd = np.tile(flag_bd, (b.num, 1))
+                boundary_flags = np.vstack((boundary_flags, flag_bd))
         fields["boundary"] = [boundary_flags for _ in selected_times]
 
     empty_array = np.empty(0)
