@@ -15,6 +15,11 @@ install_requires = [
     "torch_scatter",
 ]
 
+test_requires = [
+    'pytest',
+    'pytest-cov',
+]
+
 setup(
     name="foamgraph",
     version="0.1.0",
@@ -24,5 +29,8 @@ setup(
     url="https://github.com/",
     python_requires=">=3.6",
     install_requires=install_requires,
+    extras_require={
+        'test': test_requires,
+    },
     packages=find_packages(exclude=("tests", "docs")),
 )
