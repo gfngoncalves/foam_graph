@@ -4,7 +4,9 @@ from setuptools import setup, find_packages
 
 install_requires = [
     "decorator==4.4.2",
+    "matplotlib",
     "openfoamparser",
+    "plotly",
     "pyfoam",
     "pytorch_lightning",
     "torch",
