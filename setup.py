@@ -25,7 +25,7 @@ test_requires = [
 setup(
     name="foamgraph",
     version="0.1.0",
-    description="foam_graph is a Python library for manipulating OpenFOAM cases as graphs.",
+    description="FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.",
     author="Gabriel Goncalves",
     author_email="",
     url="https://github.com/",

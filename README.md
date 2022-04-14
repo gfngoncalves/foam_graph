@@ -1,6 +1,10 @@
-# foam_graph
+# FoamGraph
 
-foam_graph is a Python library for manipulating OpenFOAM cases as graphs.
+![foam_graph_logo](docs/source/images/foam_graph_logo.svg)
+
+--------------------------------------------------------------------------------
+
+FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.
 
 ## Installation
 
