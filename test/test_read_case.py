@@ -13,3 +13,16 @@ def test_read_case(rootdir):
     assert graph.U.shape == (32, 3)
     assert graph.p.shape == (32, 1)
     assert graph.pos.shape == (32, 3)
+
+def test_read_case_dynamic(rootdir):
+    case_path = os.path.join(rootdir, 'data/minimumCaseDynamic')
+    graph = read_case(
+        case_path,
+        ("U", "p"),
+        read_boundaries=True,
+        times="all",
+    )[1]
+    assert graph.num_edges == 480
+    assert graph.U.shape == (160, 3)
+    assert graph.p.shape == (160, 1)
+    assert graph.pos.shape == (160, 3)
