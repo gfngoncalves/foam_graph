@@ -11,7 +11,7 @@ from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 
 import os.path
 
-from typing import Iterable, Optional, Union, Callable
+from typing import Iterable, Optional, Union, Callable, Tuple
 from collections.abc import Mapping
 
 
@@ -48,13 +48,13 @@ def _read_mesh(
     return mesh
 
 
-def _internal_connectivity(mesh: op.FoamMesh) -> np.array:
+def _internal_connectivity(mesh: op.FoamMesh) -> np.ndarray:
     return np.array(
         [mesh.owner[0 : mesh.num_inner_face], mesh.neighbour[0 : mesh.num_inner_face]]
     )
 
 
-def _boundary_connectivity(mesh: op.FoamMesh) -> np.array:
+def _boundary_connectivity(mesh: op.FoamMesh) -> np.ndarray:
     bd_orig = []
     bd_dest = []
     n_empty = 0
@@ -76,7 +76,7 @@ def _boundary_connectivity(mesh: op.FoamMesh) -> np.array:
     return np.array([bd_orig, bd_dest])
 
 
-def _boundary_positions(mesh: op.FoamMesh) -> np.array:
+def _boundary_positions(mesh: op.FoamMesh) -> np.ndarray:
     pos_f = []
     for bd in mesh.boundary.keys():
         face_centres = mesh.boundary_face_centres[bd]
@@ -89,7 +89,7 @@ def _boundary_positions(mesh: op.FoamMesh) -> np.array:
 
 def _mesh_to_edges_and_nodes(
     mesh: op.FoamMesh, read_boundaries: bool = True
-) -> tuple[torch.tensor, torch.tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor]:
     edge_index = _internal_connectivity(mesh)
     pos = mesh.cell_centres
 
@@ -108,7 +108,7 @@ def _mesh_to_edges_and_nodes(
 
 def _expand_field_shape(
     field: Optional[Union[float, np.ndarray]], n_vals: int, n_comps: int
-) -> np.array:
+) -> np.ndarray:
     if field is None:
         field = np.zeros((n_vals)) if n_comps == 1 else np.zeros((n_vals, n_comps))
     if not isinstance(field, np.ndarray):
@@ -149,7 +149,7 @@ def _read_field(
     field_name: str,
     read_boundaries: bool = True,
     time: float = 0,
-) -> torch.tensor:
+) -> torch.Tensor:
     field, field_boundary = op.parse_field_all(f"{case_name}/{time}/{field_name}")
     n_comps = _number_of_components(field, mesh)
     field = _expand_field_shape(field, len(mesh.cell_centres), n_comps)
@@ -164,7 +164,7 @@ def _read_field(
     return field
 
 
-def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.array:
+def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.ndarray:
     return np.array([1]) if bd is not None else np.array([0])
 
 
@@ -174,7 +174,7 @@ def read_case(
     read_boundaries: bool = True,
     times: Union[str, Iterable[float]] = "all",
     boundary_encoding: Callable[
-        [Optional[str], Mapping], np.array
+        [Optional[str], Mapping], np.ndarray
     ] = _boundary_encoding,
 ) -> StaticGraphTemporalSignal:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
