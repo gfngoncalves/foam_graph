@@ -1,7 +1,7 @@
-foam-graph documentation
+FoamGraph documentation
 ======================================
 
-foam_graph is a Python library for manipulating OpenFOAM cases as graphs.
+FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.
 
 .. toctree::
    :maxdepth: 1

@@ -1,7 +1,7 @@
 Installation
 ======================================
 
-Use the package manager pip to install foam_graph::
+Use the package manager pip to install FoamGraph::
 
     pip install .
 

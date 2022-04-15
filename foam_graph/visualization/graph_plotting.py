@@ -5,17 +5,14 @@ import matplotlib.pyplot as plt
 
 
 def plot_graph(
-    graph, field_name=None, field_component=0, time=None, ax=None, plot_colorbar=False
+    graph, field_name=None, field_component=0, ax=None, plot_colorbar=False
 ):
     if ax is None:
         ax = plt.gca()
 
     value_plotted = None
     if field_name is not None:
-        if time is not None:
-            value_plotted = graph[field_name][time]
-        else:
-            value_plotted = graph[field_name]
+        value_plotted = graph[field_name]
     node_attrs = (
         ["pos", "y"] if value_plotted is not None else ["pos",]
     )

@@ -1,21 +1,47 @@
 import openfoamparser as op
 import numpy as np
 import torch
-from torch_geometric.data import Data
+from torch_geometric_temporal.signal import (
+    StaticGraphTemporalSignal,
+    DynamicGraphTemporalSignal,
+)
 from torch_geometric.utils import to_undirected
 
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 
 import os.path
 
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Callable
 from collections.abc import Mapping
 
 
+class _FoamMeshExtended(op.FoamMesh):
+    """ FoamMesh class """
+
+    def __init__(self, path):
+        self.path = os.path.join(path, "polyMesh/")
+        self._parse_mesh_data(self.path)
+        self.num_point = len(self.points)
+        self.num_face = len(self.owner)
+        self.num_inner_face = len(self.neighbour)
+        self.num_cell = max(self.owner)
+        self._set_boundary_faces()
+        self._construct_cells()
+        self.cell_centres = None
+        self.cell_volumes = None
+        self.face_areas = None
+
+
 def _read_mesh(
-    case_name: str, read_boundaries: bool = True, time: float = 0
-) -> op.FoamMesh:
-    mesh = op.FoamMesh(case_name)
+    case_name: str,
+    read_boundaries: bool = True,
+    time: float = 0,
+    dynamic_mesh: bool = False,
+) -> _FoamMeshExtended:
+    mesh_path = f"{case_name}/constant"
+    if dynamic_mesh and os.path.isdir(f"{case_name}/{time}/polyMesh"):
+        mesh_path = f"{case_name}/{time}"
+    mesh = _FoamMeshExtended(mesh_path)
     mesh.read_cell_centres(f"{case_name}/{time}/C")
     if read_boundaries:
         mesh.boundary_face_centres = op.parse_boundary_field(f"{case_name}/{time}/C")
@@ -75,9 +101,7 @@ def _mesh_to_edges_and_nodes(
         pos = np.vstack([pos, pos_bd])
 
     edge_index = torch.as_tensor(edge_index)
-    edge_index = to_undirected(edge_index)
-
-    pos = torch.as_tensor(pos, dtype=torch.float32)
+    edge_index = to_undirected(edge_index).detach().numpy()
 
     return (edge_index, pos)
 
@@ -137,7 +161,11 @@ def _read_field(
             field_value = _get_value_from_field_name(field_boundary, bd).get(b"value")
             field_bd = _expand_field_shape(field_value, mesh.boundary[bd].num, n_comps,)
             field = np.vstack([field, field_bd])
-    return torch.as_tensor(field, dtype=torch.float32)
+    return field
+
+
+def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.array:
+    return np.array([1]) if bd is not None else np.array([0])
 
 
 def read_case(
@@ -145,7 +173,10 @@ def read_case(
     field_names: Iterable[str],
     read_boundaries: bool = True,
     times: Union[str, Iterable[float]] = "all",
-) -> Data:
+    boundary_encoding: Callable[
+        [Optional[str], Mapping], np.array
+    ] = _boundary_encoding,
+) -> StaticGraphTemporalSignal:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
     Args:
@@ -158,12 +189,9 @@ def read_case(
         ValueError: unsupported input type for times parameter.
 
     Returns:
-        Data: PyTorch Geometric graph. Fields are stored as attributes with shape [timesteps, cells, components]
+        StaticGraphTemporalSignal: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
     """
     case = SolutionDirectory(case_path)
-
-    mesh = _read_mesh(case.name, read_boundaries, case.getFirst())
-    edge_index, pos = _mesh_to_edges_and_nodes(mesh, read_boundaries)
 
     if isinstance(times, (list, np.ndarray)):
         selected_times = [str(t) for t in times]
@@ -176,19 +204,62 @@ def read_case(
 
     fields = {f: [] for f in field_names}
     fields["time"] = []
+
+    dynamic_mesh = any(
+        True for time in selected_times if os.path.isdir(f"{case_path}/{time}/polyMesh")
+    )
+    edge_index_list = []
+    pos_list = []
+    boundary_flags_list = []
+
+    mesh_read = False
     for time in selected_times:
-        fields["time"].append(float(time))
+        fields["time"].append(np.full(1, float(time)))
+        if (not mesh_read) or dynamic_mesh:
+            mesh = _read_mesh(case.name, read_boundaries, time, dynamic_mesh)
+            edge_index, pos = _mesh_to_edges_and_nodes(mesh, read_boundaries)
+            mesh_read = True
+
+            if read_boundaries:
+                flag_internal = _boundary_encoding(None, mesh.boundary)
+                boundary_flags = np.tile(flag_internal, (len(mesh.cell_centres), 1))
+                for bd in mesh.boundary.keys():
+                    b = mesh.boundary[bd]
+                    if b.type != b"empty":
+                        flag_bd = _boundary_encoding(bd, mesh.boundary)
+                        flag_bd = np.tile(flag_bd, (b.num, 1))
+                        boundary_flags = np.vstack((boundary_flags, flag_bd))
+
+            if dynamic_mesh:
+                edge_index_list.append(edge_index)
+                pos_list.append(pos)
+                if read_boundaries:
+                    boundary_flags_list.append(boundary_flags)
+
         for f in field_names:
             field = _read_field(case.name, mesh, f, read_boundaries, time)
             fields[f].append(field)
 
-    if read_boundaries:
-        fields["boundary"] = torch.as_tensor(
-            np.zeros((len(pos), 1)), dtype=torch.float32
+    if dynamic_mesh:
+        if read_boundaries:
+            fields["boundary"] = boundary_flags_list
+        graph = DynamicGraphTemporalSignal(
+            edge_indices=edge_index_list,
+            edge_weights=[None for _ in selected_times],
+            features=[None for _ in selected_times],
+            targets=[None for _ in selected_times],
+            pos=pos_list,
+            **fields,
         )
-        fields["boundary"][mesh.num_cell + 1 :, :] = 1
-
-    graph = Data(
-        edge_index=edge_index, pos=pos, name=os.path.basename(case.name), **fields
-    )
+    else:
+        if read_boundaries:
+            fields["boundary"] = [boundary_flags for _ in selected_times]
+        graph = StaticGraphTemporalSignal(
+            edge_index=edge_index,
+            edge_weight=None,
+            features=[None for _ in selected_times],
+            targets=[None for _ in selected_times],
+            pos=[pos for _ in selected_times],
+            **fields,
+        )
     return graph

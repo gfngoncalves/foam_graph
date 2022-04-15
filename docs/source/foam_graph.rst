@@ -7,8 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   foam_graph.data
-   foam_graph.datasets
    foam_graph.nn
    foam_graph.transforms
    foam_graph.utils

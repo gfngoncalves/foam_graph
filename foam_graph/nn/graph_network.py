@@ -40,7 +40,7 @@ class NodeModel(torch.nn.Module):
         self, num_node_features, num_edge_features, out_dim, num_hidden, hidden_dim
     ):
         super(NodeModel, self).__init__()
-        num_node_model_features = 2 * hidden_dim
+        num_node_model_features = num_node_features + num_edge_features
 
         self.node_mlp = MLP(
             num_node_model_features, out_dim, num_hidden, hidden_dim, with_norm=True,
@@ -58,7 +58,7 @@ class EdgeModel(torch.nn.Module):
         self, num_node_features, num_edge_features, out_dim, num_hidden, hidden_dim
     ):
         super(EdgeModel, self).__init__()
-        num_edge_model_features = 3 * hidden_dim
+        num_edge_model_features = num_node_features + 2 * num_edge_features
 
         self.edge_mlp = MLP(
             num_edge_model_features, out_dim, num_hidden, hidden_dim, with_norm=True,
@@ -101,15 +101,15 @@ class GraphNetwork(torch.nn.Module):
         for i in range(num_blocks):
             layer = MetaLayer(
                 EdgeModel(
-                    num_node_features,
-                    num_edge_features,
+                    hidden_channels,
+                    hidden_channels,
                     hidden_channels,
                     num_hidden,
                     hidden_channels,
                 ),
                 NodeModel(
-                    num_node_features,
-                    num_edge_features,
+                    hidden_channels,
+                    hidden_channels,
                     hidden_channels,
                     num_hidden,
                     hidden_channels,

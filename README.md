@@ -1,10 +1,12 @@
-# foam_graph
+![foam_graph_logo](docs/source/images/foam_graph_logo_text.svg)
 
-foam_graph is a Python library for manipulating OpenFOAM cases as graphs.
+--------------------------------------------------------------------------------
+
+FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foam_graph.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install FoamGraph.
 
 ```bash
 pip install .
@@ -23,20 +25,21 @@ postProcess -func writeCellCentres
 The following example loads a case folder as a graph:
 
 ```python
-from torch_geometric.data import extract_tar
+from torch_geometric.data import download_url, extract_tar
 from foam_graph.utils.graph_from_foam import read_case
 
-extract_tar("examples/damBreak.tar.xz", ".", mode="r:xz")
+download_url("https://github.com/gfngoncalves/openfoam_cases/blob/main/damBreak.tar.xz?raw=true", ".")
+extract_tar("damBreak.tar.xz", ".", mode="r:xz")
 
 graph = read_case(
     "damBreak",
     ("alpha.water",),
     read_boundaries=True,
-    times="first_and_last",
+    times="all",
 )
 ```
 
-The resulting graph is a [Data](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html#torch_geometric.data.Data) object.
+The resulting graph is a [StaticGraphTemporalSignal](https://pytorch-geometric-temporal.readthedocs.io/en/latest/modules/signal.html) object.
 
 More examples are provided in the *examples* folder.
 
