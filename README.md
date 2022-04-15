@@ -1,6 +1,7 @@
 ![foam_graph_logo](docs/source/images/foam_graph_logo_text.svg)
 
 --------------------------------------------------------------------------------
+[![CI](https://github.com/gfngoncalves/foam_graph/workflows/CI/badge.svg)](https://github.com/gfngoncalves/foam_graph/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/gfngoncalves/foam_graph/branch/main/graph/badge.svg?token=MYbISAymil)](https://codecov.io/gh/gfngoncalves/foam_graph) [![Documentation Status](https://readthedocs.org/projects/foamgraph/badge/?version=latest)](https://foamgraph.readthedocs.io/en/latest/?badge=latest)
 
 FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.
 
