@@ -18,7 +18,6 @@ The following example loads a case folder as a graph::
         "damBreak",
         ("alpha.water",),
         read_boundaries=True,
-        times="all",
     )
 
 The resulting graph is a StaticGraphTemporalSignal object.

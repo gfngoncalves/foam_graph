@@ -14,6 +14,9 @@ import os.path
 from typing import Iterable, Optional, Union, Callable, Tuple
 from collections.abc import Mapping
 
+from operator import itemgetter
+import warnings
+
 
 class _FoamMeshExtended(op.FoamMesh):
     """ FoamMesh class """
@@ -172,7 +175,8 @@ def read_case(
     case_path: str,
     field_names: Iterable[str],
     read_boundaries: bool = True,
-    times: Union[str, Iterable[float]] = "all",
+    times: Optional[Iterable[float]] = None,
+    times_indices: Optional[Iterable[Union[slice, int]]] = None,
     boundary_encoding: Callable[
         [Optional[str], Mapping], np.ndarray
     ] = _boundary_encoding,
@@ -183,24 +187,32 @@ def read_case(
         case_path (str): Path to the folder containg an OpenFOAM case
         field_names (Iterable[str]): List of field names extracted from the case
         read_boundaries (bool, optional): Flag for reading boundary patch faces as graph nodes. Also adds a binary mask to the graph for those faces. Defaults to True.
-        times (Union[str, Iterable[float]], optional): List of times to be read, or strings "first_and_last" or "all" . Defaults to "all".
+        times (Iterable[float], optional): List of times to be read. Defaults to None, which reads all. Overrides 'times_indices'.
+        times_indices (Iterable[Union[slice, int]], optional): List of time indices to be read. Defaults to None, which reads all.
 
     Raises:
-        ValueError: unsupported input type for times parameter.
+        ValueError: no times selected.
 
     Returns:
         StaticGraphTemporalSignal: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
     """
     case = SolutionDirectory(case_path)
-
-    if isinstance(times, (list, np.ndarray)):
-        selected_times = [str(t) for t in times]
-    elif times == "first_and_last":
-        selected_times = [case.getFirst(), case.getLast()]
-    elif times == "all":
-        selected_times = case.times
+    
+    if times is not None:
+        selected_times = [str(t) for t in times if str(t) in case.times]
+        if set(selected_times) != set(str(t) for t in times):
+            warnings.warn("Not all times requested were found in the simulation.")
+        if times_indices is not None:
+            warnings.warn(
+                "Pass only one of 'times' or 'times_indices'. Ignoring 'times_indices'."
+            )
+    elif times_indices is not None:
+        selected_times = itemgetter(*times_indices)(case.times)
     else:
-        raise ValueError("times must be an array, 'all' or 'first_and_last'")
+        selected_times = case.times
+
+    if not selected_times:
+        raise ValueError("No times have been selected.")
 
     fields = {f: [] for f in field_names}
     fields["time"] = []

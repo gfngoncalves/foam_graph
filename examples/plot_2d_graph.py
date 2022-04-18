@@ -13,7 +13,6 @@ graph = read_case(
     "damBreak",
     ("alpha.water",),
     read_boundaries=True,
-    times="all",
 )
 
 #%% Plot alpha field for 2D case
