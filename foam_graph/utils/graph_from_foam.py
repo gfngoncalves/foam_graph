@@ -221,12 +221,12 @@ def read_case(
             mesh_read = True
 
             if read_boundaries:
-                flag_internal = _boundary_encoding(None, mesh.boundary)
+                flag_internal = boundary_encoding(None, mesh.boundary)
                 boundary_flags = np.tile(flag_internal, (len(mesh.cell_centres), 1))
                 for bd in mesh.boundary.keys():
                     b = mesh.boundary[bd]
                     if b.type != b"empty":
-                        flag_bd = _boundary_encoding(bd, mesh.boundary)
+                        flag_bd = boundary_encoding(bd, mesh.boundary)
                         flag_bd = np.tile(flag_bd, (b.num, 1))
                         boundary_flags = np.vstack((boundary_flags, flag_bd))
 
