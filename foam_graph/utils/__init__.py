@@ -1,8 +1,8 @@
-from .foam_from_graph import write_to_internal_field
+from .foam_from_graph import write_data
 from .graph_from_foam import read_case
 
 __all__ = [
-    "write_to_internal_field",
+    "write_data",
     "read_case",
 ]
 
