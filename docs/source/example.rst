@@ -20,4 +20,22 @@ The following example loads a case folder as a graph::
         read_boundaries=True,
     )
 
-The resulting graph is a StaticGraphTemporalSignal object.
+The resulting graph is a StaticGraphTemporalSignal object for static meshes, or  a DynamicGraphTemporalSignal for dynamic meshes.
+
+The package alo provides some convenience functions for plotting and preprocessing data. As an example, a timestep can be plotted with::
+
+    import matplotlib.pyplot as plt
+    from foam_graph.visualization.graph_plotting import plot_graph
+
+    field_name_plot = "alpha.water"
+    time_idx = 5
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    plot_graph(graph[time_idx], field_name_plot, ax=ax)
+
+    plt.tight_layout()
+    plt.show()
+
+.. image:: images/dam_break.svg
+  :width: 400
+  :alt: Dam break

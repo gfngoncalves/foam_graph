@@ -47,7 +47,24 @@ graph = read_case(
 )
 ```
 
-The resulting graph is a [StaticGraphTemporalSignal](https://pytorch-geometric-temporal.readthedocs.io/en/latest/modules/signal.html) object.
+The resulting graph is a [StaticGraphTemporalSignal](https://pytorch-geometric-temporal.readthedocs.io/en/latest/modules/signal.html) object for static meshes, or  a DynamicGraphTemporalSignal for dynamic meshes.
+
+The package alo provides some convenience functions for plotting and preprocessing data. As an example, a timestep can be plotted with:
+```python
+import matplotlib.pyplot as plt
+from foam_graph.visualization.graph_plotting import plot_graph
+
+field_name_plot = "alpha.water"
+time_idx = 5
+
+fig, ax = plt.subplots(figsize=(5, 5))
+plot_graph(graph[time_idx], field_name_plot, ax=ax)
+
+plt.tight_layout()
+plt.show()
+```
+
+![dam_break](docs/source/images/dam_break.svg)
 
 More examples are provided in the *examples* folder.
 
