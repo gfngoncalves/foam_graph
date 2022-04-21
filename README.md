@@ -7,12 +7,20 @@ FoamGraph is a Python library for manipulating OpenFOAM cases as graphs.
 
 ## Installation
 
+FoamGraph requires [PyTorch](https://pytorch.org/get-started) and [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html). It's recommended to check the documentation of these packages for intallation instructions. The following is an example for conda installation:
+
+```bash
+conda install pytorch torchvision cudatoolkit={CUDA} -c pytorch
+conda install pyg -c pyg
+```
+
+where `{CUDA}` should be replaced by the desired CUDA version.
+
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install FoamGraph.
 
 ```bash
 pip install .
 ```
-For 3D plotting, *plotly* is required.
 
 ## Example
 
