@@ -171,7 +171,7 @@ def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.ndarray:
     return np.array([1]) if bd is not None else np.array([0])
 
 
-def read_case(
+def read_foam(
     case_path: str,
     field_names: Iterable[str],
     read_boundaries: bool = True,

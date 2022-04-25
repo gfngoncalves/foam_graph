@@ -1,10 +1,10 @@
 import os
-from foam_graph.utils.graph_from_foam import read_case
+from foam_graph.utils.graph_from_foam import read_foam
 import pytest
 
-def test_read_case(rootdir):
+def test_read_foam(rootdir):
     case_path = os.path.join(rootdir, 'data/minimumCase')
-    graph = read_case(
+    graph = read_foam(
         case_path,
         ("U", "p"),
         read_boundaries=True,
@@ -17,14 +17,14 @@ def test_read_case(rootdir):
     assert graph[0].pos.shape == (32, 3)
 
     with pytest.raises(ValueError):
-        graph = read_case(
+        graph = read_foam(
             case_path,
             ("U", "p"),
             read_boundaries=True,
             times=[]
         )
     
-    graph = read_case(
+    graph = read_foam(
         case_path,
         ("U", "p"),
         read_boundaries=True,
@@ -32,7 +32,7 @@ def test_read_case(rootdir):
     )
     assert len(graph.U) == 1
 
-    graph = read_case(
+    graph = read_foam(
         case_path,
         ("U", "p"),
         read_boundaries=True,
@@ -40,7 +40,7 @@ def test_read_case(rootdir):
     )
     assert len(graph.U) == 1
 
-    graph = read_case(
+    graph = read_foam(
         case_path,
         ("U", "p"),
         read_boundaries=True,
@@ -48,9 +48,9 @@ def test_read_case(rootdir):
     )
     assert len(graph.U) == 1
 
-def test_read_case_dynamic(rootdir):
+def test_read_foam_dynamic(rootdir):
     case_path = os.path.join(rootdir, 'data/minimumCaseDynamic')
-    graph = read_case(
+    graph = read_foam(
         case_path,
         ("U", "p"),
         read_boundaries=True,

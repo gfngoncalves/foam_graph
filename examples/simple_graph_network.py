@@ -7,7 +7,7 @@ import torch_geometric.transforms as T
 import pytorch_lightning as pl
 from pytorch_lightning.trainer.trainer import Trainer
 
-from foam_graph.utils.graph_from_foam import read_case
+from foam_graph.utils.graph_from_foam import read_foam
 from foam_graph.nn.graph_network import GraphNetwork
 from foam_graph.transforms import Make2D
 
@@ -62,7 +62,7 @@ class SimpleGraphNetwork(pl.LightningModule):
 class CFDDataModule(pl.LightningDataModule):
     def __init__(self):
         super().__init__()
-        data = read_case(
+        data = read_foam(
             "damBreak", ("U", "alpha.water"), read_boundaries=False,
         )
         self.transform = T.Compose(

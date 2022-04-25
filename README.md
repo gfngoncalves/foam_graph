@@ -35,12 +35,12 @@ The following example loads a case folder as a graph:
 
 ```python
 from torch_geometric.data import download_url, extract_tar
-from foam_graph.utils.graph_from_foam import read_case
+from foam_graph.utils.graph_from_foam import read_foam
 
 download_url("https://github.com/gfngoncalves/openfoam_cases/blob/main/damBreak.tar.xz?raw=true", ".")
 extract_tar("damBreak.tar.xz", ".", mode="r:xz")
 
-graph = read_case(
+graph = read_foam(
     "damBreak",
     ("alpha.water",),
     read_boundaries=True,

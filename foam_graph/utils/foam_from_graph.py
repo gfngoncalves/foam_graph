@@ -88,7 +88,7 @@ def _write_tensor(
     result.writeFile()
 
 
-def write_data(
+def write_foam(
     case_name: str,
     time_out: float,
     data_out: Data,
