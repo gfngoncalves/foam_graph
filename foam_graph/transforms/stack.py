@@ -2,7 +2,7 @@ import torch
 
 
 class Stack(object):
-    r"""Scales an attribute to a given range.
+    r"""Creates an attribute by stacking other attributes.
 
     Args:
         attr (str): The attribute to stack.
