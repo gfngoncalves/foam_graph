@@ -6,7 +6,7 @@ from PyFoam.RunDictionary.ParsedParameterFile import (
 )
 from torch_geometric.data import Data
 import torch
-from foam_graph.utils.graph_from_foam import _read_mesh, _FoamMeshExtended
+from foam_graph.utils.graph_from_foam import _read_mesh, FoamMesh
 
 from typing import Iterable, Optional
 
@@ -47,7 +47,7 @@ def _write_tensor(
     field_base: str,
     field_out: str,
     time_base: float = 0,
-    mesh: Optional[_FoamMeshExtended] = None,
+    mesh: Optional[FoamMesh] = None,
 ) -> None:
     if mesh is None:
         mesh = _read_mesh(
@@ -57,7 +57,7 @@ def _write_tensor(
     n_comps = data_out.size(-1)
     val_type = _guess_data_type(n_comps)
 
-    n_bds = sum(bd.num for _, bd in mesh.boundary.items() if bd.type != b"empty")
+    n_bds = sum(bd["nFaces"] for _, bd in mesh.boundary.items() if bd["type"] != "empty")
     n_internal = mesh.num_cell + 1
     if len(data_out) != n_internal + n_bds:
         raise ValueError(
@@ -78,12 +78,12 @@ def _write_tensor(
 
     n_start = n_internal
     for bd_name, bd in mesh.boundary.items():
-        if bd.type == b"empty":
+        if bd["type"] == "empty":
             continue
-        result.content["boundaryField"][bd_name.decode()]["value"] = _generate_field(
-            data_out[n_start : n_start + bd.num]
+        result.content["boundaryField"][bd_name]["value"] = _generate_field(
+            data_out[n_start : n_start + bd["nFaces"]]
         )
-        n_start += bd.num
+        n_start += bd["nFaces"]
 
     result.writeFile()
 

@@ -1,6 +1,5 @@
 decorator==4.4.2
 matplotlib==3.5.1
-openfoamparser==0.13
 plotly==4.9.0
 pyfoam==2020.5
 pytorch_lightning==1.6.0

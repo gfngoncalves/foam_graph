@@ -18,8 +18,8 @@ def test_write_case(rootdir, tmp_path):
 
     write_foam(case_path, 0, data, ["x", "y"], ["U", "p"], ["U.out", "p.out"])
     graph = read_foam(case_path, ("U.out", "p.out"),)[0]
-    torch.testing.assert_close(graph["U.out"], x.float())
-    torch.testing.assert_close(graph["p.out"], y.float())
+    torch.testing.assert_close(graph["U.out"].float(), x.float())
+    torch.testing.assert_close(graph["p.out"].float(), y.float())
 
     with pytest.raises(ValueError):
         x = torch.reshape(torch.tensor(range(1 * 3)), (-1, 3))

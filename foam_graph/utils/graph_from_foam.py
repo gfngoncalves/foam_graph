@@ -1,4 +1,3 @@
-import openfoamparser as op
 import numpy as np
 import torch
 from torch_geometric_temporal.signal import (
@@ -8,6 +7,7 @@ from torch_geometric_temporal.signal import (
 from torch_geometric.utils import to_undirected
 
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
+from PyFoam.Basics.DataStructures import Field, FixedLength
 
 import os.path
 
@@ -17,22 +17,53 @@ from collections.abc import Mapping
 from operator import itemgetter
 import warnings
 
+from PyFoam.RunDictionary.ParsedParameterFile import (
+    ParsedBoundaryDict,
+    ParsedParameterFile,
+)
 
-class _FoamMeshExtended(op.FoamMesh):
-    """ FoamMesh class """
 
-    def __init__(self, path):
-        self.path = os.path.join(path, "polyMesh/")
-        self._parse_mesh_data(self.path)
-        self.num_point = len(self.points)
+from pathlib import Path
+
+
+def parse_boundary_field(fn):
+    return ParsedParameterFile(fn)["boundaryField"]
+
+
+def parse_field_all(fn):
+    f = ParsedParameterFile(fn)
+    return f["internalField"], f["boundaryField"]
+
+
+class FoamMesh(object):
+    def __init__(self, path, read_boundaries=False):
+        self.path = Path(path) / Path("polyMesh")
+
+        self.boundary = ParsedBoundaryDict(self.path / Path("boundary")).content
+        self.faces = ParsedParameterFile(
+            self.path / Path("faces"), listDictWithHeader=True
+        ).content
+        self.neighbour = ParsedParameterFile(
+            self.path / Path("neighbour"), listDictWithHeader=True
+        ).content
+        self.owner = ParsedParameterFile(
+            self.path / Path("owner"), listDictWithHeader=True
+        ).content
+
+        self.read_boundaries = read_boundaries
         self.num_face = len(self.owner)
         self.num_inner_face = len(self.neighbour)
         self.num_cell = max(self.owner)
-        self._set_boundary_faces()
-        self._construct_cells()
-        self.cell_centres = None
-        self.cell_volumes = None
-        self.face_areas = None
+        self.boundary_face_centres = None
+
+    def read_cell_centres(self, fn):
+        self.cell_centres = ParsedParameterFile(fn)["internalField"]
+        if self.read_boundaries:
+            self.boundary_face_centres = parse_boundary_field(fn)
+
+    def boundary_cells(self, bd):
+        b = self.boundary[bd]
+        return self.owner[b["startFace"] : b["startFace"] + b["nFaces"]]
 
 
 def _read_mesh(
@@ -40,37 +71,40 @@ def _read_mesh(
     read_boundaries: bool = True,
     time: float = 0,
     dynamic_mesh: bool = False,
-) -> _FoamMeshExtended:
+) -> FoamMesh:
     mesh_path = f"{case_name}/constant"
     if dynamic_mesh and os.path.isdir(f"{case_name}/{time}/polyMesh"):
         mesh_path = f"{case_name}/{time}"
-    mesh = _FoamMeshExtended(mesh_path)
+    mesh = FoamMesh(mesh_path, read_boundaries=True)
     mesh.read_cell_centres(f"{case_name}/{time}/C")
     if read_boundaries:
-        mesh.boundary_face_centres = op.parse_boundary_field(f"{case_name}/{time}/C")
+        mesh.boundary_face_centres = parse_boundary_field(f"{case_name}/{time}/C")
     return mesh
 
 
-def _internal_connectivity(mesh: op.FoamMesh) -> np.ndarray:
+def _internal_connectivity(mesh: FoamMesh) -> np.ndarray:
     return np.array(
         [mesh.owner[0 : mesh.num_inner_face], mesh.neighbour[0 : mesh.num_inner_face]]
     )
 
 
-def _boundary_connectivity(mesh: op.FoamMesh) -> np.ndarray:
+def _boundary_connectivity(mesh: FoamMesh) -> np.ndarray:
     bd_orig = []
     bd_dest = []
     n_empty = 0
     offsets = {}
     for bd in mesh.boundary.keys():
         b = mesh.boundary[bd]
-        if b.type == b"empty":
-            n_empty += b.num
+        if b["type"] == "empty":
+            n_empty += b["nFaces"]
         else:
             bd_offset = -mesh.num_inner_face + mesh.num_cell + 1 - n_empty
             offsets[bd] = bd_offset
 
-            bd_orig.append(np.array(range(b.start, b.start + b.num)) + bd_offset)
+            bd_orig.append(
+                np.array(range(b["startFace"], b["startFace"] + b["nFaces"]))
+                + bd_offset
+            )
             bd_dest.append(np.fromiter(mesh.boundary_cells(bd), int))
 
     bd_orig = np.hstack(bd_orig)
@@ -79,11 +113,11 @@ def _boundary_connectivity(mesh: op.FoamMesh) -> np.ndarray:
     return np.array([bd_orig, bd_dest])
 
 
-def _boundary_positions(mesh: op.FoamMesh) -> np.ndarray:
+def _boundary_positions(mesh: FoamMesh) -> np.ndarray:
     pos_f = []
     for bd in mesh.boundary.keys():
         face_centres = mesh.boundary_face_centres[bd]
-        fc = face_centres.get(b"value")
+        fc = face_centres.get("value")
         if fc is not None:
             pos_f.append(fc)
 
@@ -91,7 +125,7 @@ def _boundary_positions(mesh: op.FoamMesh) -> np.ndarray:
 
 
 def _mesh_to_edges_and_nodes(
-    mesh: op.FoamMesh, read_boundaries: bool = True
+    mesh: FoamMesh, read_boundaries: bool = True
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     edge_index = _internal_connectivity(mesh)
     pos = mesh.cell_centres
@@ -110,28 +144,33 @@ def _mesh_to_edges_and_nodes(
 
 
 def _expand_field_shape(
-    field: Optional[Union[float, np.ndarray]], n_vals: int, n_comps: int
+    field: Optional[Field], n_vals: int, n_comps: int
 ) -> np.ndarray:
     if field is None:
-        field = np.zeros((n_vals)) if n_comps == 1 else np.zeros((n_vals, n_comps))
-    if not isinstance(field, np.ndarray):
-        field = np.array([field])
-    if len(field) != n_vals:
-        field = np.tile(field, (n_vals, 1))
-    if field.ndim == 1:
-        field = np.expand_dims(field, axis=1)
-    return field
+        return np.zeros((n_vals, 1)) if n_comps == 1 else np.zeros((n_vals, n_comps))
 
-
-def _number_of_components(field: Union[float, np.ndarray], mesh: op.FoamMesh) -> int:
-    if not isinstance(field, np.ndarray):
-        return 1
-    elif len(field) != len(mesh.cell_centres):
-        return len(field)
-    elif field.ndim == 1:
-        return 1
+    if field.isUniform():
+        return np.tile(np.array(field.val), (n_vals, 1))
     else:
-        return field.shape[1]
+        field_out = np.array(field.val)
+        if field_out.ndim == 1:
+            field_out = np.expand_dims(field, axis=1)
+        return field_out
+
+
+def _number_of_components(field: Field, mesh: FoamMesh) -> int:
+    if field.isUniform():
+        if isinstance(field.val, FixedLength):
+            return len(field.val)
+        else:
+            return 1
+    elif isinstance(field.val, list):
+        if isinstance(field.val[0], FixedLength):
+            return len(field.val[0])
+        else:
+            return 1
+    else:
+        return len(field.val[0])
 
 
 def _get_value_from_field_name(field_boundary: Mapping, bd: str):
@@ -148,21 +187,23 @@ def _get_value_from_field_name(field_boundary: Mapping, bd: str):
 
 def _read_field(
     case_name: str,
-    mesh: op.FoamMesh,
+    mesh: FoamMesh,
     field_name: str,
     read_boundaries: bool = True,
     time: float = 0,
-) -> torch.Tensor:
-    field, field_boundary = op.parse_field_all(f"{case_name}/{time}/{field_name}")
+) -> np.ndarray:
+    field, field_boundary = parse_field_all(f"{case_name}/{time}/{field_name}")
     n_comps = _number_of_components(field, mesh)
     field = _expand_field_shape(field, len(mesh.cell_centres), n_comps)
     if read_boundaries:
         for bd in mesh.boundary.keys():
-            if mesh.boundary[bd].type == b"empty":
+            if mesh.boundary[bd]["type"] == "empty":
                 continue
 
-            field_value = _get_value_from_field_name(field_boundary, bd).get(b"value")
-            field_bd = _expand_field_shape(field_value, mesh.boundary[bd].num, n_comps,)
+            field_value = _get_value_from_field_name(field_boundary, bd).get("value")
+            field_bd = _expand_field_shape(
+                field_value, mesh.boundary[bd]["nFaces"], n_comps,
+            )
             field = np.vstack([field, field_bd])
     return field
 
@@ -197,7 +238,7 @@ def read_foam(
         StaticGraphTemporalSignal: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
     """
     case = SolutionDirectory(case_path)
-    
+
     if times is not None:
         selected_times = [str(t) for t in times if str(t) in case.times]
         if set(selected_times) != set(str(t) for t in times):
@@ -228,7 +269,7 @@ def read_foam(
     for time in selected_times:
         fields["time"].append(np.full(1, float(time)))
         if (not mesh_read) or dynamic_mesh:
-            mesh = _read_mesh(case.name, read_boundaries, time, dynamic_mesh)
+            mesh = _read_mesh(str(case.name), read_boundaries, time, dynamic_mesh)
             edge_index, pos = _mesh_to_edges_and_nodes(mesh, read_boundaries)
             mesh_read = True
 
@@ -237,9 +278,9 @@ def read_foam(
                 boundary_flags = np.tile(flag_internal, (len(mesh.cell_centres), 1))
                 for bd in mesh.boundary.keys():
                     b = mesh.boundary[bd]
-                    if b.type != b"empty":
+                    if b["type"] != "empty":
                         flag_bd = boundary_encoding(bd, mesh.boundary)
-                        flag_bd = np.tile(flag_bd, (b.num, 1))
+                        flag_bd = np.tile(flag_bd, (b["nFaces"], 1))
                         boundary_flags = np.vstack((boundary_flags, flag_bd))
 
             if dynamic_mesh:
@@ -249,7 +290,7 @@ def read_foam(
                     boundary_flags_list.append(boundary_flags)
 
         for f in field_names:
-            field = _read_field(case.name, mesh, f, read_boundaries, time)
+            field = _read_field(str(case.name), mesh, f, read_boundaries, time)
             fields[f].append(field)
 
     if dynamic_mesh:
