@@ -4,7 +4,7 @@ from torch_scatter import scatter_add
 from torch_geometric.nn import LayerNorm, MetaLayer
 
 
-class MLP(torch.nn.Module):
+class _MLP(torch.nn.Module):
     def __init__(self, in_dim, out_dim, num_hidden, hidden_dim, with_norm=False):
         super().__init__()
         self.num_hidden = num_hidden
@@ -35,14 +35,14 @@ class MLP(torch.nn.Module):
         return out
 
 
-class NodeModel(torch.nn.Module):
+class _NodeModel(torch.nn.Module):
     def __init__(
         self, num_node_features, num_edge_features, out_dim, num_hidden, hidden_dim
     ):
-        super(NodeModel, self).__init__()
+        super(_NodeModel, self).__init__()
         num_node_model_features = num_node_features + num_edge_features
 
-        self.node_mlp = MLP(
+        self.node_mlp = _MLP(
             num_node_model_features, out_dim, num_hidden, hidden_dim, with_norm=True,
         )
 
@@ -53,14 +53,14 @@ class NodeModel(torch.nn.Module):
         return self.node_mlp(out)
 
 
-class EdgeModel(torch.nn.Module):
+class _EdgeModel(torch.nn.Module):
     def __init__(
         self, num_node_features, num_edge_features, out_dim, num_hidden, hidden_dim
     ):
-        super(EdgeModel, self).__init__()
+        super(_EdgeModel, self).__init__()
         num_edge_model_features = num_node_features + 2 * num_edge_features
 
-        self.edge_mlp = MLP(
+        self.edge_mlp = _MLP(
             num_edge_model_features, out_dim, num_hidden, hidden_dim, with_norm=True,
         )
 
@@ -71,25 +71,37 @@ class EdgeModel(torch.nn.Module):
 
 
 class GraphNetwork(torch.nn.Module):
+    """Graph Network, as proposed in `"Relational inductive biases, 
+    deep learning, and graph networks" <https://arxiv.org/abs/1806.01261>`_
+
+    Args:
+        num_node_features (int): Dimension of the node feature vector.
+        num_edge_features (int): Dimension of the edge feature vector.
+        num_targets (int): Dimension of the target vector.
+        hidden_channels (int): Dimension of the latent space.
+        num_hidden (int): Number of hidden layers in MLPs.
+        num_blocks (int): Number of message passing blocks.
+    """
+
     def __init__(
         self,
-        num_node_features,
-        num_edge_features,
-        num_targets,
-        hidden_channels,
-        num_hidden,
-        num_blocks,
+        num_node_features: int,
+        num_edge_features: int,
+        num_targets: int,
+        hidden_channels: int,
+        num_hidden: int,
+        num_blocks: int,
     ):
         super(GraphNetwork, self).__init__()
 
-        self.node_encoder = MLP(
+        self.node_encoder = _MLP(
             num_node_features,
             hidden_channels,
             num_hidden,
             hidden_channels,
             with_norm=True,
         )
-        self.edge_encoder = MLP(
+        self.edge_encoder = _MLP(
             num_edge_features,
             hidden_channels,
             num_hidden,
@@ -100,14 +112,14 @@ class GraphNetwork(torch.nn.Module):
         self.layers = torch.nn.ModuleList()
         for i in range(num_blocks):
             layer = MetaLayer(
-                EdgeModel(
+                _EdgeModel(
                     hidden_channels,
                     hidden_channels,
                     hidden_channels,
                     num_hidden,
                     hidden_channels,
                 ),
-                NodeModel(
+                _NodeModel(
                     hidden_channels,
                     hidden_channels,
                     hidden_channels,
@@ -117,7 +129,7 @@ class GraphNetwork(torch.nn.Module):
             )
             self.layers.append(layer)
 
-        self.decoder = MLP(hidden_channels, num_targets, num_hidden, hidden_channels)
+        self.decoder = _MLP(hidden_channels, num_targets, num_hidden, hidden_channels)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
