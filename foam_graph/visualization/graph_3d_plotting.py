@@ -1,7 +1,18 @@
 import plotly.graph_objects as go
+from torch_geometric.data import Data
+from typing import Optional
 
 
-def plot_3d_graph(graph, field_name=None, field_component=0):
+def plot_3d_graph(
+    graph: Data, field_name: Optional[str] = None, field_component: int = 0,
+):
+    """Plots a 3D graph.
+
+    Args:
+        graph (Data): Graph to be plotted.
+        field_name (Optional[str], optional): Graph attribute used for coloring. Defaults to None.
+        field_component (int, optional): Component of graph attribute used for coloring. Defaults to 0.
+    """
     field_plot_name = "field_plot"
     graph[field_plot_name] = None
     if field_name is not None:
@@ -64,11 +75,7 @@ def plot_3d_graph(graph, field_name=None, field_component=0):
         width=650,
         height=625,
         showlegend=False,
-        scene=dict(
-            xaxis=dict(axis),
-            yaxis=dict(axis),
-            zaxis=dict(axis),
-        ),
+        scene=dict(xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis),),
         margin=dict(t=0),
         hovermode="closest",
     )

@@ -3,10 +3,25 @@ from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 import matplotlib.pyplot as plt
 
+from typing import Optional
+
 
 def plot_graph(
-    graph, field_name=None, field_component=0, ax=None, plot_colorbar=False
+    graph: Data,
+    field_name: Optional[str] = None,
+    field_component: int = 0,
+    ax: Optional[plt.Axes] = None,
+    plot_colorbar: bool = False,
 ):
+    """Plots a 2D graph.
+
+    Args:
+        graph (Data): Graph to be plotted.
+        field_name (Optional[str], optional): Graph attribute used for coloring. Defaults to None.
+        field_component (int, optional): Component of graph attribute used for coloring. Defaults to 0.
+        ax (Optional[plt.Axes], optional): Axis to plot. Defaults to None.
+        plot_colorbar (bool, optional): Flag for including a colorbar. Defaults to False.
+    """
     if ax is None:
         ax = plt.gca()
 
