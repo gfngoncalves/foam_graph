@@ -13,7 +13,7 @@ class Make2D(object):
     def __init__(self, plane):
         self.plane = plane
         if self.plane not in self.plane_to_comps:
-            ValueError("invalid plane specification")
+            raise ValueError("invalid plane specification")
         self.comps = self.plane_to_comps[self.plane]
 
     def __call__(self, data):

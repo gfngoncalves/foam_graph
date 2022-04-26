@@ -24,6 +24,9 @@ def test_Make2D(simple_graph_3d):
     assert data_transform.pos.size(1) == 2
     torch.testing.assert_close(data_transform.pos, pos_orig[:, :2])
 
+    with pytest.raises(ValueError):
+        t = Make2D("")
+
 
 def test_NormalizeZScore(simple_graph_3d):
     x_orig = simple_graph_3d.x.clone().detach()
