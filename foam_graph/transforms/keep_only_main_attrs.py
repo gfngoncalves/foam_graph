@@ -1,6 +1,3 @@
-import torch
-
-
 class KeepOnlyMainAttrs(object):
     r"""Removes all attributes except the desired ones.
 

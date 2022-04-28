@@ -1,6 +1,3 @@
-import torch
-
-
 class Make2D(object):
     r"""Scales an attribute to a given range.
 

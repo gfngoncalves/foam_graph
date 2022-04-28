@@ -1,6 +1,3 @@
-import torch
-
-
 class Scale(object):
     r"""Scales an attribute to a given range.
 

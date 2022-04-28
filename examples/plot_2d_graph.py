@@ -1,5 +1,4 @@
 # %%
-import numpy as np
 import matplotlib.pyplot as plt
 from torch_geometric.data import download_url, extract_tar
 from foam_graph.utils.graph_from_foam import read_foam

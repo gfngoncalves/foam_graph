@@ -169,20 +169,6 @@ def _number_of_components(field: Field, mesh: FoamMesh) -> int:
             return len(field.val[0])
         else:
             return 1
-    else:
-        return len(field.val[0])
-
-
-def _get_value_from_field_name(field_boundary: Mapping, bd: str):
-    if bd in field_boundary:
-        return field_boundary[bd]
-    for b in field_boundary.keys():
-        if b.decode("utf-8")[0] == '"' and b.decode("utf-8")[-1] == '"':
-            bds = b.decode("utf-8")[2:-2].split("|")
-            bds = [bi.encode() for bi in bds]
-            if bd in bds:
-                return field_boundary[b]
-    return None
 
 
 def _read_field(
@@ -200,7 +186,7 @@ def _read_field(
             if mesh.boundary[bd]["type"] == "empty":
                 continue
 
-            field_value = _get_value_from_field_name(field_boundary, bd).get("value")
+            field_value = field_boundary[bd].get("value")
             field_bd = _expand_field_shape(
                 field_value, mesh.boundary[bd]["nFaces"], n_comps,
             )

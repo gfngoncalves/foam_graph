@@ -1,6 +1,3 @@
-import torch
-
-
 class NormalizeZScore(object):
     r"""Scales an attribute to a given mean and std.
 
