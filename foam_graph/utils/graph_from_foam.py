@@ -221,7 +221,7 @@ def read_foam(
     boundary_encoding: Callable[
         [Optional[str], Mapping], np.ndarray
     ] = _boundary_encoding,
-) -> StaticGraphTemporalSignal:
+) -> Union[StaticGraphTemporalSignal, DynamicGraphTemporalSignal]:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
     Args:
@@ -235,7 +235,7 @@ def read_foam(
         ValueError: no times selected.
 
     Returns:
-        StaticGraphTemporalSignal: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
+        Union[StaticGraphTemporalSignal, DynamicGraphTemporalSignal]: PyTorch Geometric Temporal data iterator. Fields are stored as extra attributes, with the same name as in the case.
     """
     case = SolutionDirectory(case_path)
 
