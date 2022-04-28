@@ -10,7 +10,7 @@ FoamFile
     version     2.0;
     format      ascii;
     class       regIOobject;
-    location    "0.005/polyMesh";
+    location    "1/polyMesh";
     object      cellZones;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

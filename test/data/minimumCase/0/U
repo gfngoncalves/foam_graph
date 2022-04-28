@@ -20,10 +20,18 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-    sides
+    valueBoundary
     {
         type            fixedValue;
-	value           uniform (1 1 1);
+        value           uniform (1 1 1);
+    }
+    zeroGradBoundary
+    {
+        type            zeroGradient;
+    }
+    emptyBoundary
+    {
+        type            empty;
     }
 }
 

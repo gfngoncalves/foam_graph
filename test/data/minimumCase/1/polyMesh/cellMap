@@ -9,20 +9,49 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       polyBoundaryMesh;
-    location    "0.005/polyMesh";
-    object      boundary;
+    class       labelList;
+    note        "From cells in mesh at 1 to cells in mesh at 0";
+    location    "1/polyMesh";
+    object      cellMap;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-1
+
+32
 (
-    sides
-    {
-        type            patch;
-        nFaces          96;
-        startFace       144;
-    }
+0
+1
+2
+3
+4
+5
+6
+7
+0
+1
+2
+3
+4
+5
+6
+7
+0
+1
+2
+3
+4
+5
+6
+7
+0
+1
+2
+3
+4
+5
+6
+7
 )
+
 
 // ************************************************************************* //

@@ -9,29 +9,30 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       labelList;
-    note        "nPoints:27  nCells:8  nFaces:36  nInternalFaces:12";
-    location    "constant/polyMesh";
-    object      neighbour;
+    class       volScalarField;
+    object      p;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+dimensions      [0 2 -2 0 0 0 0];
 
-12
-(
-1
-2
-4
-3
-5
-3
-6
-7
-5
-6
-7
-7
-)
+internalField   nonuniform List<scalar> 8(1 2 3 4 5 6 7 8);
 
+boundaryField
+{
+    valueBoundary
+    {
+        type            calculated;
+        value           nonuniform List<scalar> 8(9 10 11 12 13 14 15 16);
+    }
+    zeroGradBoundary
+    {
+        type            zeroGradient;
+    }
+    emptyBoundary
+    {
+        type            empty;
+    }
+}
 
 // ************************************************************************* //

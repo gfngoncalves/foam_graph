@@ -15,13 +15,26 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-1
+3
 (
-    sides
+    valueBoundary
     {
         type            patch;
-        nFaces          24;
+        nFaces          8;
         startFace       12;
+    }
+    zeroGradBoundary
+    {
+        type            patch;
+        nFaces          8;
+        startFace       20;
+    }
+    emptyBoundary
+    {
+        type            empty;
+        inGroups        1(empty);
+        nFaces          8;
+        startFace       28;
     }
 )
 

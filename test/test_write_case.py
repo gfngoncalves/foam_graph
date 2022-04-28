@@ -11,13 +11,13 @@ import pytest
 def test_write_case(rootdir, tmp_path):
     case_path = (tmp_path / "minimumCase").as_posix()
     copy_tree(os.path.join(rootdir, "data/minimumCase"), case_path)
-    n = 32
+    n = 24
     x = torch.reshape(torch.tensor(range(n * 3)), (-1, 3))
     y = torch.reshape(torch.tensor(range(n * 1)), (-1, 1))
     data = Data(x=x, y=y)
 
     write_foam(case_path, 0, data, ["x", "y"], ["U", "p"], ["U.out", "p.out"])
-    graph = read_foam(case_path, ("U.out", "p.out"),)[0]
+    graph = read_foam(case_path, ("U.out", "p.out"), times=[0])[0]
     torch.testing.assert_close(graph["U.out"].float(), x.float())
     torch.testing.assert_close(graph["p.out"].float(), y.float())
 
