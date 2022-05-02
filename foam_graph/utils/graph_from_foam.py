@@ -197,7 +197,20 @@ def _read_field(
     return field
 
 
-def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.ndarray:
+def _boundary_encoding_name_as_one_hot(
+    bd: Optional[str], boundaries: Mapping
+) -> np.ndarray:
+    """Encodes a boundary as a one-hot tensor. 
+    Class 0 is used for internal cells, and the other classes are the boundary names, 
+    in the order present in "boundaries".
+
+    Args:
+        bd (Optional[str]): boundary name, or None for internal cell.
+        boundaries (Mapping): dictionary of boundaries.
+
+    Returns:
+        np.ndarray: encoded boundary.
+    """
     valid_bds = [
         b for b in boundaries.keys() if boundaries[b]["type"] not in IGNORED_PATCH_TYPES
     ]
@@ -213,7 +226,7 @@ def read_foam(
     times_indices: Optional[Iterable[Union[slice, int]]] = None,
     boundary_encoding: Callable[
         [Optional[str], Mapping], np.ndarray
-    ] = _boundary_encoding,
+    ] = _boundary_encoding_name_as_one_hot,
 ) -> Union[StaticGraphTemporalSignal, DynamicGraphTemporalSignal]:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
