@@ -6,10 +6,9 @@ from PyFoam.RunDictionary.ParsedParameterFile import (
 )
 from torch_geometric.data import Data
 import torch
-from foam_graph.utils.graph_from_foam import _read_mesh, FoamMesh
+from foam_graph.utils.graph_from_foam import _read_mesh, FoamMesh, IGNORED_PATCH_TYPES
 
 from typing import Iterable, Optional
-
 
 def _guess_data_type(n_components: int) -> str:
     data_sizes = {1: "scalar", 3: "vector", 6: "symmTensor", 9: "tensor"}
@@ -57,7 +56,7 @@ def _write_tensor(
     n_comps = data_out.size(-1)
     val_type = _guess_data_type(n_comps)
 
-    n_bds = sum(bd["nFaces"] for _, bd in mesh.boundary.items() if bd["type"] != "empty")
+    n_bds = sum(bd["nFaces"] for _, bd in mesh.boundary.items() if bd["type"] not in IGNORED_PATCH_TYPES)
     n_internal = mesh.num_cell + 1
     if len(data_out) != n_internal + n_bds:
         raise ValueError(
@@ -78,7 +77,7 @@ def _write_tensor(
 
     n_start = n_internal
     for bd_name, bd in mesh.boundary.items():
-        if bd["type"] == "empty":
+        if bd["type"] in IGNORED_PATCH_TYPES:
             continue
         result.content["boundaryField"][bd_name]["value"] = _generate_field(
             data_out[n_start : n_start + bd["nFaces"]]

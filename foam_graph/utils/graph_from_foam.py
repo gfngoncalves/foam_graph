@@ -25,6 +25,7 @@ from PyFoam.RunDictionary.ParsedParameterFile import (
 
 from pathlib import Path
 
+IGNORED_PATCH_TYPES = ["empty", "wedge"]
 
 def parse_boundary_field(fn):
     return ParsedParameterFile(fn)["boundaryField"]
@@ -95,7 +96,7 @@ def _boundary_connectivity(mesh: FoamMesh) -> np.ndarray:
     offsets = {}
     for bd in mesh.boundary.keys():
         b = mesh.boundary[bd]
-        if b["type"] == "empty":
+        if b["type"] in IGNORED_PATCH_TYPES:
             n_empty += b["nFaces"]
         else:
             bd_offset = -mesh.num_inner_face + mesh.num_cell + 1 - n_empty
@@ -183,7 +184,7 @@ def _read_field(
     field = _expand_field_shape(field, len(mesh.cell_centres), n_comps)
     if read_boundaries:
         for bd in mesh.boundary.keys():
-            if mesh.boundary[bd]["type"] == "empty":
+            if mesh.boundary[bd]["type"] in IGNORED_PATCH_TYPES:
                 continue
 
             field_value = field_boundary[bd].get("value")
@@ -264,7 +265,7 @@ def read_foam(
                 boundary_flags = np.tile(flag_internal, (len(mesh.cell_centres), 1))
                 for bd in mesh.boundary.keys():
                     b = mesh.boundary[bd]
-                    if b["type"] != "empty":
+                    if b["type"] not in IGNORED_PATCH_TYPES:
                         flag_bd = boundary_encoding(bd, mesh.boundary)
                         flag_bd = np.tile(flag_bd, (b["nFaces"], 1))
                         boundary_flags = np.vstack((boundary_flags, flag_bd))
