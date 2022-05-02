@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.nn.functional import one_hot
 from torch_geometric_temporal.signal import (
     StaticGraphTemporalSignal,
     DynamicGraphTemporalSignal,
@@ -26,6 +27,7 @@ from PyFoam.RunDictionary.ParsedParameterFile import (
 from pathlib import Path
 
 IGNORED_PATCH_TYPES = ["empty", "wedge"]
+
 
 def parse_boundary_field(fn):
     return ParsedParameterFile(fn)["boundaryField"]
@@ -196,7 +198,11 @@ def _read_field(
 
 
 def _boundary_encoding(bd: Optional[str], boundaries: Mapping) -> np.ndarray:
-    return np.array([1]) if bd is not None else np.array([0])
+    valid_bds = [
+        b for b in boundaries.keys() if boundaries[b]["type"] not in IGNORED_PATCH_TYPES
+    ]
+    category = 0 if bd is None else valid_bds.index(bd) + 1
+    return one_hot(torch.tensor(category), len(valid_bds) + 1)
 
 
 def read_foam(
