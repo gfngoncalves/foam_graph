@@ -1,11 +1,13 @@
 import torch
 from foam_graph.transforms import (
+    ApplyLambdaTemporalSignal,
     KeepOnlyMainAttrs,
     Make2D,
     NormalizeZScore,
     Scale,
     Stack,
 )
+from torch_geometric_temporal.signal import StaticGraphTemporalSignal
 import pytest
 
 
@@ -66,3 +68,17 @@ def test_Stack(simple_graph_3d):
     torch.testing.assert_close(data_transform.x, x_orig)
     torch.testing.assert_close(data_transform.y, y_orig)
 
+
+def test_ApplyLambdaTemporalSignal(simple_graph_3d):
+    n = 2
+    datas = StaticGraphTemporalSignal(
+        simple_graph_3d.edge_index.detach().numpy(),
+        None,
+        [simple_graph_3d.x.detach().numpy() for i in range(n)],
+        [None for i in range(n)],
+        pos=[simple_graph_3d.x.detach().numpy() for i in range(n)],
+    )
+    t = ApplyLambdaTemporalSignal("targets", lambda datas: datas[1].x - datas[0].x, 1)
+    datas_transform = t(datas)
+    data_transform = datas_transform[0]
+    torch.testing.assert_close(data_transform.y, simple_graph_3d.x - simple_graph_3d.x)
