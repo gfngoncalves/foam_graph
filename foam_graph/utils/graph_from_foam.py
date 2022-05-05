@@ -185,14 +185,19 @@ def _read_field(
     n_comps = _number_of_components(field, mesh)
     field = _expand_field_shape(field, len(mesh.cell_centres), n_comps)
     if read_boundaries:
-        for bd in mesh.boundary.keys():
-            if mesh.boundary[bd]["type"] in IGNORED_PATCH_TYPES:
+        for bd_name, bd in mesh.boundary.items():
+            if bd["type"] in IGNORED_PATCH_TYPES:
                 continue
 
-            field_value = field_boundary[bd].get("value")
-            field_bd = _expand_field_shape(
-                field_value, mesh.boundary[bd]["nFaces"], n_comps,
-            )
+            field_value = field_boundary[bd_name].get("value")
+
+            if field_value is None:
+                owners = mesh.owner[bd["startFace"]:bd["startFace"] + bd["nFaces"]]
+                field_bd = field[owners]
+            else:
+                field_bd = _expand_field_shape(
+                    field_value, bd["nFaces"], n_comps,
+                )
             field = np.vstack([field, field_bd])
     return field
 
