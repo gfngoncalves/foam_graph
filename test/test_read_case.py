@@ -41,6 +41,15 @@ def test_read_foam(rootdir):
     )
     assert len(graph.U) == 1
 
+    graph = read_foam(
+        case_path,
+        ("U", "p"),
+        read_boundaries=True,
+        times_indices=[slice(0, 1)],
+        global_attrs=(("nu", "constant/transportProperties", ("nu",)),)
+    )
+    assert graph[0].nu == pytest.approx(0.01)
+
 def test_read_foam_dynamic(rootdir):
     case_path = os.path.join(rootdir, 'data/minimumCase')
     graph = read_foam(

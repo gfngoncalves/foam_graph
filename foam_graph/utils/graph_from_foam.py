@@ -16,6 +16,7 @@ from typing import Iterable, Optional, Union, Callable, Tuple
 from collections.abc import Mapping
 
 from operator import itemgetter
+from functools import reduce
 import warnings
 
 from PyFoam.RunDictionary.ParsedParameterFile import (
@@ -223,6 +224,10 @@ def _boundary_encoding_name_as_one_hot(
     return one_hot(torch.tensor(category), len(valid_bds) + 1)
 
 
+def _deep_get(dictionary: Mapping, keys: Iterable[str]) -> float:
+    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
+
+
 def read_foam(
     case_path: str,
     field_names: Iterable[str],
@@ -232,6 +237,7 @@ def read_foam(
     boundary_encoding: Callable[
         [Optional[str], Mapping], np.ndarray
     ] = _boundary_encoding_name_as_one_hot,
+    global_attrs: Optional[Tuple[str, str, Iterable[str]]] = None,
 ) -> Union[StaticGraphTemporalSignal, DynamicGraphTemporalSignal]:
     """Reads an OpenFOAM case as a PyTorch Geometric graph.
 
@@ -241,6 +247,11 @@ def read_foam(
         read_boundaries (bool, optional): Flag for reading boundary patch faces as graph nodes. Also adds a binary mask to the graph for those faces. Defaults to True.
         times (Iterable[float], optional): List of times to be read. Defaults to None, which reads all. Overrides 'times_indices'.
         times_indices (Iterable[Union[slice, int]], optional): List of time indices to be read. Defaults to None, which reads all.
+        global_attrs (Optional[Tuple[str, str, Iterable[str]]], optional): 
+            List of global properties to be extracted from the case.
+            Each property is defined by an attribute name, a relative file path
+            and a list of nested dictionary indices to access the value. 
+            Defaults to None. API is subject to future change.
 
     Raises:
         ValueError: no times selected.
@@ -267,6 +278,9 @@ def read_foam(
         raise ValueError("No times have been selected.")
 
     fields = {f: [] for f in field_names}
+    if global_attrs is not None:
+        for attr, _, _ in global_attrs:
+            fields[attr] = []
     fields["time"] = []
 
     dynamic_mesh = any(
@@ -303,6 +317,12 @@ def read_foam(
         for f in field_names:
             field = _read_field(str(case.name), mesh, f, read_boundaries, time)
             fields[f].append(field)
+
+        if global_attrs is not None:
+            for attr, path, keys in global_attrs:
+                f = ParsedParameterFile(os.path.join(case_path, path)).content
+                v = _deep_get(f, keys)
+                fields[attr].append(np.array(v))
 
     if dynamic_mesh:
         if read_boundaries:
