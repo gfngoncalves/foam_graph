@@ -247,6 +247,12 @@ def read_foam(
         read_boundaries (bool, optional): Flag for reading boundary patch faces as graph nodes. Also adds a binary mask to the graph for those faces. Defaults to True.
         times (Iterable[float], optional): List of times to be read. Defaults to None, which reads all. Overrides 'times_indices'.
         times_indices (Iterable[Union[slice, int]], optional): List of time indices to be read. Defaults to None, which reads all.
+        boundary_encoding (Callable[[Optional[str], Mapping], np.ndarray], optional):
+            Callable that takes a boundary name (or None, for internal cells)
+            and a dictionary of all boundaries and returns a tensor for
+            identifying that boundary/region. Defaults to
+            _boundary_encoding_name_as_one_hot, which encodes each boundary
+            as a category with a one-hot tensor. API is subject to change.
         global_attrs (Optional[Tuple[str, str, Iterable[str]]], optional): 
             List of global properties to be extracted from the case.
             Each property is defined by an attribute name, a relative file path
