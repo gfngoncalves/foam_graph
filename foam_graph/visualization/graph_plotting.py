@@ -39,13 +39,12 @@ def plot_graph(
     graphnx = to_networkx(graph, node_attrs=node_attrs, to_undirected=True)
     selected_nodes = [n for n, v in graphnx.nodes(data=True)]
     subgraphnx = graphnx.subgraph(selected_nodes)
-    n_comps = graph.y.size(-1)
     pos = nx.get_node_attributes(subgraphnx, "pos")
     if value_plotted is not None:
         node_color_dict = nx.get_node_attributes(graphnx, "y")
     for node in pos:
         pos[node] = pos[node][0:2]
-        if value_plotted is not None and n_comps > 1:
+        if value_plotted is not None and graph.y.size(-1) > 1:
             node_color_dict[node] = node_color_dict[node][field_component]
     node_color = (
         [node_color_dict[g] for g in subgraphnx.nodes]
