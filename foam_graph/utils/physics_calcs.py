@@ -9,19 +9,29 @@ def _mul_sparse_dense(m_sparse, m_dense):
 
 
 def _d_edge_attr_d_pos_node(graph: Data, j: int, indices: Tensor, i_mag_dx: int):
-    vals = graph.edge_attr[indices[0]]
-    v = torch.zeros_like(vals)
-    v[:, j] = 1
-    v[:, i_mag_dx] = vals[:, j] / vals[:, i_mag_dx]
-    return torch.sparse_coo_tensor(indices, v, graph.edge_attr.size())
+    vals = graph.edge_attr[indices]
+
+    idxs_dx = torch.full_like(vals[:, 0], j)
+    idxs_mag_dx = torch.full_like(vals[:, 0], i_mag_dx % vals.size(1))
+
+    idxs_dx_edges = torch.stack((indices, idxs_dx), 0)
+    idxs_mag_dx_edges = torch.stack((indices, idxs_mag_dx), 0)
+
+    vals_dx = -torch.ones_like(vals[:, 0])
+    vals_mag_dx = -vals[:, j] / vals[:, i_mag_dx]
+
+    v1 = torch.sparse_coo_tensor(idxs_dx_edges, vals_dx, graph.edge_attr.size())
+    v2 = torch.sparse_coo_tensor(idxs_mag_dx_edges, vals_mag_dx, graph.edge_attr.size())
+
+    return v1 + v2
 
 
 def _d_edge_attr_d_pos(graph: Data, i: int, j: int, i_mag_dx: int):
     indices_orig = torch.transpose((graph.edge_index[0, :] == i).nonzero(), 0, 1)
     indices_dest = torch.transpose((graph.edge_index[1, :] == i).nonzero(), 0, 1)
 
-    s_orig = _d_edge_attr_d_pos_node(graph, j, indices_orig, i_mag_dx)
-    s_dest = _d_edge_attr_d_pos_node(graph, j, indices_dest, i_mag_dx)
+    s_orig = _d_edge_attr_d_pos_node(graph, j, indices_orig[0], i_mag_dx)
+    s_dest = _d_edge_attr_d_pos_node(graph, j, indices_dest[0], i_mag_dx)
 
     s = s_dest - s_orig
     return s.coalesce().detach()
@@ -108,6 +118,6 @@ def div(
         s = _mul_sparse_dense(d_edge_attr_d_pos, d_edge_attr_norm_d_edge_attr)
         s = _mul_sparse_dense(s, d_y_norm_d_edge_attr_norm)
         s *= d_y_d_y_norm[i_y]
-        div_value += s.values().sum()
+        div_value += s.coalesce().values().sum()
 
     return div_value

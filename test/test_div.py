@@ -19,16 +19,21 @@ def test_div():
     graph = transforms(g)
 
     wx = torch.tensor(3.0)
+    wy = torch.tensor(6.0)
     y1 = (
         0.5
         * wx
         * scatter_add(g.edge_attr[:, 0], g.edge_index[1], dim=0, dim_size=g.num_nodes)
     )
-    y2 = y1
+    y2 = (
+        0.5
+        * wy
+        * scatter_add(g.edge_attr[:, 1], g.edge_index[1], dim=0, dim_size=g.num_nodes)
+    )
     y = torch.column_stack((y1, y2))
 
     edge_normalize = NormalizeZScore("edge_attr", attr_mean=0)
     target_normalize = NormalizeZScore("y", attr_mean=0)
     div_loss = div(y, graph, 0, edge_normalize, target_normalize)
 
-    torch.testing.assert_close(div_loss.float(), wx.float())
+    torch.testing.assert_close(div_loss.float(), -wx.float()-wy.float())
