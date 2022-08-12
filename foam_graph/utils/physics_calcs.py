@@ -111,6 +111,7 @@ def div(
     d_y_d_y_norm = _d_y_d_y_norm(y, target_normalize)
 
     div_value = torch.tensor(0.0)
+    div_value = div_value.type_as(y)
     for i_dx, i_y in zip(indices_distances, indices_target_vector):
         d_y_norm_d_edge_attr_norm = _d_y_norm_d_edge_attr_norm(y, graph, i, i_y)
         d_edge_attr_d_pos = _d_edge_attr_d_pos(graph, i, i_dx, indice_distance_mag)

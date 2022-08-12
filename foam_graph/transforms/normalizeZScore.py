@@ -1,4 +1,6 @@
-class NormalizeZScore(object):
+import torch
+
+class NormalizeZScore(torch.nn.Module):
     r"""Scales an attribute to a given mean and std.
 
     Args:
@@ -7,10 +9,11 @@ class NormalizeZScore(object):
         attr_std (float or Tensor, optional): Std. dev. values. (default: :obj:`1`)
     """
 
-    def __init__(self, attr="x", attr_mean=0, attr_std=1):
+    def __init__(self, attr="x", attr_mean=torch.tensor(0.0), attr_std=torch.tensor(1.0)):
+        super().__init__()
         self.attr = attr
-        self.attr_mean = attr_mean
-        self.attr_std = attr_std
+        self.register_buffer("attr_mean", attr_mean)
+        self.register_buffer("attr_std", attr_std)
 
     def __call__(self, data):
         data[self.attr] -= self.attr_mean

@@ -38,8 +38,8 @@ class DivFreeGraphNetwork(SimpleGraphNetwork):
                 y,
                 batch,
                 i,
-                self.trainer.datamodule.edge_normalize,
-                self.trainer.datamodule.target_normalize,
+                self.trainer.datamodule.edge_normalize.to(self.device),
+                self.trainer.datamodule.target_normalize.to(self.device),
             )
             div_losses.append(div_loss_i)
         div_losses = torch.stack(div_losses)
