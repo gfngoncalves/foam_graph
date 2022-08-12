@@ -75,12 +75,14 @@ def _read_mesh(
     read_boundaries: bool = True,
     time: float = 0,
     dynamic_mesh: bool = False,
+    read_centres: bool = True,
 ) -> FoamMesh:
     mesh_path = f"{case_name}/constant"
     if dynamic_mesh and os.path.isdir(f"{case_name}/{time}/polyMesh"):
         mesh_path = f"{case_name}/{time}"
     mesh = FoamMesh(mesh_path, read_boundaries=True)
-    mesh.read_cell_centres(f"{case_name}/{time}/C")
+    if read_centres:
+        mesh.read_cell_centres(f"{case_name}/{time}/C")
     if read_boundaries:
         mesh.boundary_face_centres = parse_boundary_field(f"{case_name}/{time}/C")
     return mesh

@@ -107,7 +107,7 @@ def write_foam(
         fields_out (Iterable[str]): Names of the output fields.
         time_base (float, optional): Time where template fields are located. Defaults to 0.
     """
-    mesh = _read_mesh(case_name, read_boundaries=True, time=time_out, dynamic_mesh=True)
+    mesh = _read_mesh(case_name, read_boundaries=False, time=time_out, dynamic_mesh=True, read_centres=False)
 
     for data_name, field_base, file_out in zip(data_names, fields_base, fields_out):
         _write_tensor(
