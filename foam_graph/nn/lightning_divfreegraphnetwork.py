@@ -29,18 +29,21 @@ class DivFreeGraphNetwork(SimpleGraphNetwork):
         )
 
     def _div_loss(self, y, batch):
-        div_loss = 0
         idx_div_samples = np.random.default_rng().choice(
             len(y), self.hparams.loss_div_samples
         )
-        for i in idx_div_samples:
-            div_loss += div(
+        div_losses = []
+        for j, i in enumerate(idx_div_samples):
+            div_loss_i = div(
                 y,
                 batch,
                 i,
                 self.trainer.datamodule.edge_normalize,
                 self.trainer.datamodule.target_normalize,
             )
+            div_losses.append(div_loss_i)
+        div_losses = torch.stack(div_losses)
+        div_loss = F.mse_loss(div_losses, torch.zeros_like(div_losses))
         div_loss /= self.hparams.loss_div_samples
         return div_loss
 
