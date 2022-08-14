@@ -12,6 +12,8 @@ class NormalizeZScore(torch.nn.Module):
     def __init__(self, attr="x", attr_mean=torch.tensor(0.0), attr_std=torch.tensor(1.0)):
         super().__init__()
         self.attr = attr
+        attr_mean = torch.tensor(attr_mean) if isinstance(attr_mean, float) else attr_mean
+        attr_std = torch.tensor(attr_std) if isinstance(attr_std, float) else attr_std
         self.register_buffer("attr_mean", attr_mean)
         self.register_buffer("attr_std", attr_std)
 

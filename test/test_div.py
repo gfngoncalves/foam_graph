@@ -32,8 +32,8 @@ def test_div():
     )
     y = torch.column_stack((y1, y2))
 
-    edge_normalize = NormalizeZScore("edge_attr", attr_mean=0)
-    target_normalize = NormalizeZScore("y", attr_mean=0)
+    edge_normalize = NormalizeZScore("edge_attr", attr_mean=0.0)
+    target_normalize = NormalizeZScore("y", attr_mean=0.0)
     div_loss = div(y, graph, 0, edge_normalize, target_normalize)
 
     torch.testing.assert_close(div_loss.float(), -wx.float()-wy.float())
