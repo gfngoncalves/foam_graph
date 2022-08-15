@@ -58,7 +58,7 @@ class DivFreeGraphNetwork(SimpleGraphNetwork):
         div_loss = self._div_loss(y, batch)
         loss += self.hparams.loss_div_weight * div_loss
 
-        self.log_dict({"train_loss": loss, "div_loss": div_loss})
+        self.log_dict({"train_loss": loss, "train_div_loss": div_loss}, prog_bar=True)
         return loss
 
     def on_validation_model_eval(self, *args, **kwargs):
@@ -73,6 +73,6 @@ class DivFreeGraphNetwork(SimpleGraphNetwork):
         div_loss = self._div_loss(y, val_batch)
         loss += self.hparams.loss_div_weight * div_loss
 
-        metrics = {"val_loss": loss, "div_loss": div_loss}
+        metrics = {"val_loss": loss, "val_div_loss": div_loss}
         self.log_dict(metrics, prog_bar=True)
         return metrics
