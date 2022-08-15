@@ -17,7 +17,7 @@ def _d_edge_attr_d_pos_node(graph: Data, j: int, indices: Tensor, i_mag_dx: int)
     idxs_dx_edges = torch.stack((indices, idxs_dx), 0)
     idxs_mag_dx_edges = torch.stack((indices, idxs_mag_dx), 0)
 
-    vals_dx = -torch.ones_like(vals[:, 0])
+    vals_dx = torch.ones_like(vals[:, 0])
     vals_mag_dx = -vals[:, j] / vals[:, i_mag_dx]
 
     v1 = torch.sparse_coo_tensor(idxs_dx_edges, vals_dx, graph.edge_attr.size())
