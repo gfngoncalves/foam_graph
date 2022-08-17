@@ -279,6 +279,8 @@ def read_foam(
             )
     elif times_indices is not None:
         selected_times = itemgetter(*times_indices)(case.times)
+        if isinstance(selected_times, str) :
+            selected_times = [selected_times]
     else:
         selected_times = case.times
 
